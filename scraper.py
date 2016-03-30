@@ -50,7 +50,7 @@ def validateURL(url):
         else:
             ext = os.path.splitext(url)[1]
         validURL = r.getcode() == 200
-        validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
+        validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx', '.pdf', '.docx', '.doc']
         return validURL, validFiletype
     except:
         print ("Error validating URL.")
@@ -84,7 +84,7 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "FTRDDX_BTUHNHSFT_gov"
-url = "http://www.basildonandthurrock.nhs.uk/index.php?option=com_phocadownload&view=category&id=39&Itemid=934&limitstart=20"
+url = "https://data.gov.uk/dataset/invoices-paid-2011-12"
 errors = 0
 data = []
 
@@ -96,19 +96,21 @@ soup = BeautifulSoup(html, 'lxml')
 
 #### SCRAPE DATA
 
-blocks = soup.find_all('div', 'pd-subcategory')
+blocks = soup.find_all('div', 'dropdown')
 for block in blocks:
-    link = 'http://www.basildonandthurrock.nhs.uk'+block.find('a')['href']
-    current_html = urllib2.urlopen(link)
-    current_soup = BeautifulSoup(current_html, 'lxml')
-    file_urls = current_soup.find_all('div', 'pd-float')
-    for file_url in file_urls:
-        url = 'http://www.basildonandthurrock.nhs.uk'+file_url.find('a')['href']
-        title = file_url.find('a').text.strip()
-        csvMth = title.split()[-2][:3]
-        csvYr = title[-4:]
-        csvMth = convert_mth_strings(csvMth.upper())
-        data.append([csvYr, csvMth, url])
+    file_url = ''
+    try:
+        file_url = block.find('ul', 'dropdown-menu').find_all('li')[1].find('a')['href']
+    except:
+        pass
+    url = file_url
+    title = block.find_previous('div', 'dataset-resource-text').text.strip()
+    csvMth = title.split()[-2].strip()[:3]
+    csvYr = title.split()[-1].strip()[-4:]
+    if 'MB' in csvYr:
+        continue
+    csvMth = convert_mth_strings(csvMth.upper())
+    data.append([csvYr, csvMth, url])
 
 
 #### STORE DATA 1.0
